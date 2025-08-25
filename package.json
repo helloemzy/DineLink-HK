@@ -1,8 +1,8 @@
 {
-  "name": "cc-lovable",
+  "name": "dinelink-hk",
   "version": "1.0.0",
   "private": true,
-  "description": "CC Lovable Development Environment",
+  "description": "DineLink - Hong Kong Group Dining Coordinator with Cultural Intelligence",
   "workspaces": [
     "apps/web"
   ],

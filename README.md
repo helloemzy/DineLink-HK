@@ -1,10 +1,9 @@
-# Claudable
+# DineLink - Hong Kong Group Dining Coordinator
 
-<img src="./assets/Claudable_main.png" alt="CLovable" style="border-radius: 12px; width: 100%;" />
 <div align="center">
-<h3>Connect Claude Code. Build what you want. Deploy instantly.</h3>
-
-<p>Powered by <a href="https://opactor.ai">OPACTOR</a></p>
+<h1>🥢 DineLink</h1>
+<h3>Hong Kong's Smartest Group Dining Coordinator</h3>
+<p><em>Built with Cultural Intelligence • Mobile-First PWA • Traditional Chinese Support</em></p>
 </div>
 <p align="center">
 <a href="https://discord.gg/NJNbafHNQC">
@@ -18,66 +17,77 @@
 </a>
 </p>
 
-## What is Claudable?
+## What is DineLink?
 
-Claudable is a powerful Next.js-based web app builder that combines **C**laude Code's (Cursor CLI also supported!) advanced AI agent capabilities with **Lovable**'s simple and intuitive app building experience. Just describe your app idea - "I want a task management app with dark mode" - and watch as Claudable instantly generates the code and shows you a live preview of your working app. You can deploy your app to Vercel and integrate database with Supabase for free.
+DineLink is Hong Kong's first culturally intelligent group dining coordination platform. Built as a mobile-first Progressive Web App (PWA), it solves the unique challenges of coordinating group meals in Hong Kong's dining culture - from hierarchy-aware interactions to transparent cost splitting with face-saving mechanisms.
 
-This open-source project empowers you to build and deploy professional web applications easily for **free**.
+**Key Innovations:**
+- 🧠 **Cultural Intelligence**: First app to understand Hong Kong hierarchy dynamics and dining etiquette
+- 💰 **Transparent Cost Splitting**: Real-time cost calculation with cultural sensitivity 
+- 🌏 **Bilingual Experience**: Seamless Traditional Chinese and English interface
+- 📱 **Mobile-First PWA**: Optimized for Hong Kong's mobile lifestyle and MTR usage
+- 🥢 **Local Focus**: Hong Kong restaurant integration with cultural dining recommendations
 
-How to start? Simply login to Claude Code (or Cursor CLI), start Claudable, and describe what you want to build. That's it. There is no additional subscription cost for app builder. 
+Perfect for coordinating team dinners, family gatherings, birthday celebrations, and business meals with proper cultural respect and financial transparency. 
 
 ## Features
-<img src="./assets/Claudable_short.gif" alt="Claudable Demo" style="width: 100%; max-width: 800px;">
 
-- **Powerful Agent Performance**: Leverage the full power of Claude Code and Cursor CLI Agent capabilities with native MCP support
-- **Natural Language to Code**: Simply describe what you want to build, and Claudable generates production-ready Next.js code
-- **Instant Preview**: See your changes immediately with hot-reload as AI builds your app
-- **Zero Setup, Instant Launch**: No complex sandboxes, no API key, no database headaches - just start building immediately
-- **Beautiful UI**: Generate beautiful UI with Tailwind CSS and shadcn/ui
-- **Deploy to Vercel**: Push your app live with a single click, no configuration needed
-- **GitHub Integration**: Automatic version control and continuous deployment setup
-- **Supabase Database**: Connect production PostgreSQL with authentication ready to use
-- **Automated Error Detection**: Detect errors in your app and fix them automatically
+### 🚀 **Core Functionality**
+- **Smart Authentication**: Hong Kong phone verification (+852) with SMS integration
+- **Cultural Dashboard**: Personalized experience based on language and cultural preferences  
+- **Event Coordination**: Create and manage group dining events with cultural awareness
+- **Restaurant Discovery**: Explore Hong Kong restaurants with cultural recommendations
+- **Bilingual Interface**: Seamless Traditional Chinese and English switching
+
+### 🏗️ **Technical Excellence**
+- **Progressive Web App**: Installable on mobile devices with offline functionality
+- **Mobile-First Design**: Optimized for Hong Kong's mobile-centric lifestyle
+- **Cultural Intelligence**: Built-in understanding of Hong Kong dining etiquette
+- **Real-time Updates**: Live synchronization for group coordination
+- **Offline Support**: Continue using core features without internet connection
+
+### 🎯 **Hong Kong Optimizations**
+- **MTR-Friendly**: One-handed operation optimized for subway usage
+- **Local Payment Methods**: Integration ready for FPS, PayMe, Alipay HK
+- **Cultural Hierarchy**: Respectful handling of social dynamics in group dining
+- **Traditional Chinese**: Full support for Hong Kong's preferred language variant
 
 ## Technology Stack
-**AI Cooding Agent:**
-- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code/setup)**: Advanced AI coding agent. We strongly recommend you to use Claude Code for the best experience.
-  ```bash
-  # Install
-  npm install -g @anthropic-ai/claude-code
-  # Login
-  claude  # then > /login
-  ```
-- **[Cursor CLI](https://docs.cursor.com/en/cli/overview)**: Intelligent coding agent for complex coding tasks. It's little bit slower than Claude Code, but it's more powerful.
-  ```bash
-  # Install
-  curl https://cursor.com/install -fsS | bash
-  # Login
-  cursor-agent login
-  ```
 
-**Database & Deployment:**
-- **[Supabase](https://supabase.com/)**: Connect production-ready PostgreSQL database directly to your project.
-- **[Vercel](https://vercel.com/)**: Publish your work immediately with one-click deployment
+### **Frontend**
+- **Next.js 14**: React framework with App Router for optimal performance
+- **TypeScript**: Type-safe development for reliability
+- **Tailwind CSS**: Utility-first CSS for rapid UI development
+- **Framer Motion**: Smooth animations and cultural micro-interactions
+- **Lucide React**: Beautiful icons optimized for mobile interfaces
 
-**There is no additional subscription cost and built just for YOU.**
+### **PWA & Mobile**
+- **Service Worker**: Offline functionality and background sync
+- **Web App Manifest**: Native app-like installation experience
+- **Touch Optimizations**: Gesture-based navigation and interactions
+- **Responsive Design**: Mobile-first approach with Hong Kong screen sizes
+
+### **Cultural Intelligence**
+- **Bilingual System**: Traditional Chinese and English with auto-detection
+- **Cultural Framework**: Built-in Hong Kong dining etiquette and hierarchy awareness
+- **Local Integrations**: Ready for Hong Kong payment methods and services
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
-- Node.js 18+
-- Python 3.10+
-- Claude Code or Cursor CLI (already logged in)
-- Git
+- **Node.js 18+**: Runtime for the Next.js application
+- **Python 3.10+**: Backend API services
+- **Git**: Version control
+- **Mobile device/browser**: For testing PWA features
 
 ## Quick Start
 
-Get Claudable running on your local machine in minutes:
+Get DineLink running on your local machine in minutes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/opactorai/Claudable.git
-cd Claudable
+git clone https://github.com/YOUR-USERNAME/DineLink-HK.git
+cd DineLink-HK
 
 # Install all dependencies (Node.js and Python)
 npm install
@@ -86,12 +96,20 @@ npm install
 npm run dev
 ```
 
-Your application will be available at:
-- Frontend: http://localhost:3000
-- API Server: http://localhost:8080
-- API Documentation: http://localhost:8080/docs
+Your DineLink application will be available at:
+- **Frontend**: http://localhost:3000 (or next available port)
+- **API Server**: http://localhost:8080  
+- **API Documentation**: http://localhost:8080/docs
 
-**Note**: Ports are automatically detected. If the default ports are in use, the next available ports will be assigned.
+### 📱 **Demo the Cultural Features:**
+1. Open the app in your mobile browser
+2. Click **"Get Started"** to begin authentication
+3. Enter any 8-digit Hong Kong phone: `12345678`
+4. Use verification code: **`123456`**
+5. Complete profile setup
+6. Experience the bilingual, culturally-aware interface!
+
+**Note**: Ports are automatically detected. If default ports are busy, the next available ports will be assigned.
 
 ## Setup
 
