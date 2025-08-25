@@ -1,8 +1,6 @@
 "use client";
-import { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { 
   Users, 
   MapPin, 
@@ -12,10 +10,6 @@ import {
   Globe
 } from 'lucide-react';
 
-// Ensure fetch is available
-const fetchAPI = globalThis.fetch || fetch;
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
 type DiningEvent = {
   id: string;
@@ -214,16 +208,35 @@ export default function DineLinkHome() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Load user events
-  const loadEvents = () => {
-    if (isAuthenticated) {
-      setEvents(sampleEvents);
-    }
-  };
 
   // Initialize component
   useEffect(() => {
-    loadEvents();
+    if (isAuthenticated) {
+      setEvents([
+        {
+          id: '1',
+          name: 'Team Dinner',
+          restaurant: 'Tim Ho Wan',
+          datetime: '2025-01-28T19:30:00',
+          groupSize: 6,
+          status: 'upcoming' as const,
+          location: 'Central',
+          cuisine: 'Dim Sum',
+          estimatedCost: 180
+        },
+        {
+          id: '2', 
+          name: 'Birthday Celebration',
+          restaurant: 'Mott 32',
+          datetime: '2025-01-30T20:00:00',
+          groupSize: 8,
+          status: 'upcoming' as const,
+          location: 'Central',
+          cuisine: 'Modern Chinese',
+          estimatedCost: 350
+        }
+      ]);
+    }
     
     // Auto-detect language based on browser settings
     const browserLanguage = navigator.language.toLowerCase();
@@ -260,12 +273,7 @@ export default function DineLinkHome() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl"
-        >
+        <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
           {authStep === 'phone' && (
             <form onSubmit={handlePhoneSubmit}>
               <div className="text-center mb-6">
@@ -350,7 +358,7 @@ export default function DineLinkHome() {
               </button>
             </form>
           )}
-        </motion.div>
+        </div>
       </div>
     );
   };
@@ -540,18 +548,13 @@ export default function DineLinkHome() {
       {/* Toast Messages */}
       {toast && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className={`px-6 py-3 rounded-lg shadow-lg ${
-              toast.type === 'success'
-                ? 'bg-green-500 text-white'
-                : 'bg-red-500 text-white'
-            }`}
-          >
+          <div className={`px-6 py-3 rounded-lg shadow-lg ${
+            toast.type === 'success'
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
+          }`}>
             <p className="text-sm font-medium">{toast.message}</p>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

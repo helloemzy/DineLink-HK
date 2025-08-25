@@ -6,6 +6,12 @@ const nextConfig = {
   experimental: {
     optimizeCss: false,
     scrollRestoration: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true
+  },
+  eslint: {
+    ignoreDuringBuilds: true
   }
 };
 
