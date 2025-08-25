@@ -109,8 +109,8 @@ export default function DineLinkHome() {
       return;
     }
     
-    // Simulate sending SMS
-    showToast('Verification code sent to your phone', 'success');
+    // For demo: Show development message
+    showToast('Demo mode: Enter any 6-digit code to continue', 'success');
     setAuthStep('verification');
   };
 
@@ -121,8 +121,9 @@ export default function DineLinkHome() {
       return;
     }
     
-    // Simulate verification
-    if (verificationCode === '123456') {
+    // Development bypass: accept any 6-digit code or use 123456 for demo
+    if (verificationCode.length === 6) {
+      showToast('Phone verified successfully!', 'success');
       setAuthStep('profile');
     } else {
       showToast('Invalid verification code', 'error');
