@@ -8,6 +8,9 @@
   ],
   "scripts": {
     "dev": "npm run ensure:env && npm run ensure:venv && concurrently --raw \"npm run dev:api\" --prefix \"[WEB] \" \"npm run dev:web\"",
+    "build": "npm run build:web && cp -r apps/web/.next .next && cp -r apps/web/public public",
+    "build:web": "cd apps/web && npm install && npm run build",
+    "start": "cd apps/web && npm start",
     "dev:api": "node scripts/run-api.js",
     "dev:web": "node scripts/run-web.js",
     "ensure:env": "node scripts/setup-env.js",
