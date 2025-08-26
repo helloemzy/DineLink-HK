@@ -9,6 +9,16 @@ import {
   Phone,
   Globe
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { AuthService } from '../lib/auth';
+import { EventService } from '../lib/events';
+import { RestaurantService } from '../lib/restaurants';
+import type { User } from '@supabase/supabase-js';
+import type { Database } from '../lib/database.types';
+import type { DiningEventWithMembers } from '../lib/events';
+import CreateEventModal from '../components/CreateEventModal';
+import EventMemberModal from '../components/EventMemberModal';
+import BillSplitModal from '../components/BillSplitModal';
 
 
 type DiningEvent = {
@@ -23,12 +33,12 @@ type DiningEvent = {
   estimatedCost: number;
 };
 
-type User = {
+type UserProfile = {
   id: string;
   name: string;
   phone: string;
   language: 'en' | 'zh';
-  culturalProfile: {
+  cultural_profile: {
     hierarchyComfort: 'high' | 'medium' | 'low';
     paymentStyle: 'traditional' | 'modern' | 'mixed';
   };
@@ -36,15 +46,25 @@ type User = {
 
 export default function DineLinkHome() {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [events, setEvents] = useState<DiningEvent[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'zh'>('en');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authStep, setAuthStep] = useState<'phone' | 'verification' | 'profile'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [userName, setUserName] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showEventMemberModal, setShowEventMemberModal] = useState(false);
+  const [showBillSplitModal, setShowBillSplitModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<DiningEventWithMembers | null>(null);
+  
+  const authService = new AuthService();
+  const eventService = new EventService();
+  const restaurantService = new RestaurantService();
   
   const router = useRouter();
   
@@ -109,9 +129,16 @@ export default function DineLinkHome() {
       return;
     }
     
-    // For demo: Show development message
-    showToast('Demo mode: Enter any 6-digit code to continue', 'success');
-    setAuthStep('verification');
+    setIsLoading(true);
+    const result = await authService.sendVerificationCode(phoneNumber);
+    setIsLoading(false);
+    
+    if (result.success) {
+      showToast('Verification code sent to your phone', 'success');
+      setAuthStep('verification');
+    } else {
+      showToast(result.error || 'Failed to send verification code', 'error');
+    }
   };
 
   const handleVerificationSubmit = async (e: React.FormEvent) => {
@@ -121,12 +148,27 @@ export default function DineLinkHome() {
       return;
     }
     
-    // Development bypass: accept any 6-digit code or use 123456 for demo
-    if (verificationCode.length === 6) {
-      showToast('Phone verified successfully!', 'success');
-      setAuthStep('profile');
+    setIsLoading(true);
+    const result = await authService.verifyCode(phoneNumber, verificationCode);
+    setIsLoading(false);
+    
+    if (result.success && result.user) {
+      setUser(result.user);
+      
+      // Check if user profile exists
+      const profile = await authService.getUserProfile(result.user.id);
+      if (profile) {
+        setUserProfile(profile);
+        setIsAuthenticated(true);
+        setShowAuthModal(false);
+        showToast(`Welcome back, ${profile.name}!`, 'success');
+      } else {
+        // Need to create profile
+        setAuthStep('profile');
+        showToast('Phone verified! Please complete your profile.', 'success');
+      }
     } else {
-      showToast('Invalid verification code', 'error');
+      showToast(result.error || 'Invalid verification code', 'error');
     }
   };
 
@@ -137,21 +179,25 @@ export default function DineLinkHome() {
       return;
     }
     
-    const newUser: User = {
-      id: 'user-' + Date.now(),
+    if (!user) return;
+    
+    setIsLoading(true);
+    const result = await authService.createUserProfile({
+      user_id: user.id,
       name: userName,
       phone: phoneNumber,
-      language: currentLanguage,
-      culturalProfile: {
-        hierarchyComfort: 'medium',
-        paymentStyle: 'modern'
-      }
-    };
+      language: currentLanguage
+    });
+    setIsLoading(false);
     
-    setUser(newUser);
-    setIsAuthenticated(true);
-    setShowAuthModal(false);
-    showToast(`Welcome to DineLink, ${userName}!`, 'success');
+    if (result.success && result.profile) {
+      setUserProfile(result.profile);
+      setIsAuthenticated(true);
+      setShowAuthModal(false);
+      showToast(`Welcome to DineLink, ${userName}!`, 'success');
+    } else {
+      showToast(result.error || 'Failed to create profile', 'error');
+    }
   };
 
   // Format time for display with Hong Kong timezone  
@@ -209,35 +255,131 @@ export default function DineLinkHome() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const handleLogout = async () => {
+    await authService.signOut();
+    setUser(null);
+    setUserProfile(null);
+    setIsAuthenticated(false);
+    setEvents([]);
+    showToast('Logged out successfully', 'success');
+  };
 
-  // Initialize component
-  useEffect(() => {
-    if (isAuthenticated) {
-      setEvents([
-        {
-          id: '1',
-          name: 'Team Dinner',
-          restaurant: 'Tim Ho Wan',
-          datetime: '2025-01-28T19:30:00',
-          groupSize: 6,
-          status: 'upcoming' as const,
-          location: 'Central',
-          cuisine: 'Dim Sum',
-          estimatedCost: 180
-        },
-        {
-          id: '2', 
-          name: 'Birthday Celebration',
-          restaurant: 'Mott 32',
-          datetime: '2025-01-30T20:00:00',
-          groupSize: 8,
-          status: 'upcoming' as const,
-          location: 'Central',
-          cuisine: 'Modern Chinese',
-          estimatedCost: 350
-        }
-      ]);
+  const loadUserEventsForUser = async (currentUser: User) => {
+    try {
+      const userEvents = await eventService.getUserEvents(currentUser.id);
+      // Convert to the expected format for the UI
+      const formattedEvents = userEvents.map(event => ({
+        id: event.id,
+        name: event.name,
+        restaurant: event.restaurant_name || 'Restaurant TBD',
+        datetime: event.event_datetime,
+        groupSize: event.member_count || 1,
+        status: 'upcoming' as const,
+        location: event.location || 'Location TBD',
+        cuisine: 'Various', // Could derive from restaurant data
+        estimatedCost: event.estimated_cost || 0
+      }));
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Failed to load events:', error);
     }
+  };
+
+  const loadUserEvents = () => {
+    if (user) {
+      loadUserEventsForUser(user);
+    }
+  };
+
+  const handleEventCreated = (newEvent: any) => {
+    showToast(`Event "${newEvent.name}" created successfully!`, 'success');
+    loadUserEvents(); // Refresh events list
+  };
+
+  const handleEventClick = async (eventId: string) => {
+    if (!user) return;
+    
+    try {
+      const result = await eventService.getEventDetails(eventId, user.id);
+      if (result.success && result.event) {
+        setSelectedEvent(result.event);
+        setShowEventMemberModal(true);
+      } else {
+        showToast(result.error || 'Failed to load event details', 'error');
+      }
+    } catch (error) {
+      showToast('Failed to load event details', 'error');
+    }
+  };
+
+  const handleEventUpdated = () => {
+    loadUserEvents();
+    // Refresh selected event if it's still open
+    if (selectedEvent && user) {
+      eventService.getEventDetails(selectedEvent.id, user.id).then(result => {
+        if (result.success && result.event) {
+          setSelectedEvent(result.event);
+        }
+      });
+    }
+  };
+
+  const handleShowBillSplit = () => {
+    setShowEventMemberModal(false);
+    setShowBillSplitModal(true);
+  };
+
+
+  // Initialize component and check auth status
+  useEffect(() => {
+    async function initializeAuth() {
+      try {
+        // Check current session
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          setUser(user);
+          
+          // Get user profile
+          const profile = await authService.getUserProfile(user.id);
+          if (profile) {
+            setUserProfile(profile);
+            setCurrentLanguage(profile.language);
+            setIsAuthenticated(true);
+            
+            // Load user's real events
+            loadUserEventsForUser(user);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    initializeAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          setUser(session.user);
+          const profile = await authService.getUserProfile(session.user.id);
+          if (profile) {
+            setUserProfile(profile);
+            setCurrentLanguage(profile.language);
+            setIsAuthenticated(true);
+            loadUserEventsForUser(session.user);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setUserProfile(null);
+          setIsAuthenticated(false);
+          setEvents([]);
+        }
+      }
+    );
     
     // Auto-detect language based on browser settings
     const browserLanguage = navigator.language.toLowerCase();
@@ -258,15 +400,9 @@ export default function DineLinkHome() {
       });
     }
 
-    // Enable install prompt for PWA
-    let deferredPrompt: any;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      // Show install button or prompt
-      console.log('DineLink: PWA install prompt available');
-    });
-  }, [isAuthenticated]);
+    // Cleanup subscription
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Render authentication modal
   const renderAuthModal = () => {
@@ -301,9 +437,10 @@ export default function DineLinkHome() {
               </div>
               <button
                 type="submit"
-                className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                disabled={isLoading}
+                className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                {getText('sendCode')}
+                {isLoading ? 'Sending...' : getText('sendCode')}
               </button>
             </form>
           )}
@@ -326,9 +463,10 @@ export default function DineLinkHome() {
               </div>
               <button
                 type="submit"
-                className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                disabled={isLoading}
+                className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                {getText('verify')}
+                {isLoading ? 'Verifying...' : getText('verify')}
               </button>
             </form>
           )}
@@ -353,9 +491,10 @@ export default function DineLinkHome() {
               </div>
               <button
                 type="submit"
-                className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                disabled={isLoading}
+                className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                {getText('complete')}
+                {isLoading ? 'Creating...' : getText('complete')}
               </button>
             </form>
           )}
@@ -363,6 +502,20 @@ export default function DineLinkHome() {
       </div>
     );
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <UtensilsCrossed className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-600">Loading DineLink...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Main JSX render
   if (!isAuthenticated) {
@@ -450,7 +603,7 @@ export default function DineLinkHome() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">DineLink</h1>
-                <p className="text-xs text-gray-500">{currentLanguage === 'zh' ? `你好，${user?.name}` : `Hello, ${user?.name}`}</p>
+                <p className="text-xs text-gray-500">{currentLanguage === 'zh' ? `你好，${userProfile?.name}` : `Hello, ${userProfile?.name}`}</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -460,7 +613,11 @@ export default function DineLinkHome() {
               >
                 <Globe className="w-5 h-5" />
               </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600">
+              <button 
+                onClick={handleLogout}
+                className="p-2 text-gray-400 hover:text-gray-600"
+                title="Logout"
+              >
                 <Phone className="w-5 h-5" />
               </button>
             </div>
@@ -474,7 +631,10 @@ export default function DineLinkHome() {
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{getText('quickActions')}</h2>
           <div className="grid grid-cols-3 gap-3">
-            <button className="flex flex-col items-center p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
+            <button 
+              onClick={() => setShowCreateEventModal(true)}
+              className="flex flex-col items-center p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
+            >
               <Users className="w-6 h-6 text-red-500 mb-2" />
               <span className="text-sm font-medium text-red-700">{getText('createEvent')}</span>
             </button>
@@ -500,7 +660,11 @@ export default function DineLinkHome() {
           ) : (
             <div className="space-y-3">
               {events.map((event) => (
-                <div key={event.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div 
+                  key={event.id} 
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:bg-gray-50 transition-all cursor-pointer"
+                  onClick={() => handleEventClick(event.id)}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{event.name}</h3>
@@ -557,6 +721,48 @@ export default function DineLinkHome() {
             <p className="text-sm font-medium">{toast.message}</p>
           </div>
         </div>
+      )}
+
+      {/* Create Event Modal */}
+      {user && userProfile && (
+        <CreateEventModal
+          isOpen={showCreateEventModal}
+          onClose={() => setShowCreateEventModal(false)}
+          onEventCreated={handleEventCreated}
+          currentUserId={user.id}
+          currentLanguage={currentLanguage}
+        />
+      )}
+
+      {/* Event Member Modal */}
+      {user && userProfile && (
+        <EventMemberModal
+          isOpen={showEventMemberModal}
+          onClose={() => {
+            setShowEventMemberModal(false);
+            setSelectedEvent(null);
+          }}
+          event={selectedEvent}
+          currentUserId={user.id}
+          currentUserName={userProfile.name}
+          currentLanguage={currentLanguage}
+          onEventUpdated={handleEventUpdated}
+          onShowBillSplit={handleShowBillSplit}
+        />
+      )}
+
+      {/* Bill Split Modal */}
+      {user && userProfile && (
+        <BillSplitModal
+          isOpen={showBillSplitModal}
+          onClose={() => {
+            setShowBillSplitModal(false);
+            setSelectedEvent(null);
+          }}
+          event={selectedEvent}
+          currentUserId={user.id}
+          currentLanguage={currentLanguage}
+        />
       )}
     </div>
   );
