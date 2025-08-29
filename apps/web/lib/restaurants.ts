@@ -352,4 +352,90 @@ export class RestaurantService {
       return translation ? translation[language] : feature;
     });
   }
+
+  // Get new restaurants (recently added)
+  async getNewRestaurants(limit: number = 20) {
+    try {
+      const { data: restaurants, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Get new restaurants error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, restaurants: restaurants || [] };
+    } catch (error) {
+      console.error('Get new restaurants service error:', error);
+      return { success: false, error: 'Failed to load new restaurants' };
+    }
+  }
+
+  // User favorites functionality
+  async getUserFavorites(userId: string) {
+    try {
+      const { data: favorites, error } = await supabase
+        .from('restaurant_favorites')
+        .select(`
+          restaurant_id,
+          restaurants (*)
+        `)
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Get user favorites error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, favorites: favorites || [] };
+    } catch (error) {
+      console.error('Get user favorites service error:', error);
+      return { success: false, error: 'Failed to load favorites' };
+    }
+  }
+
+  async addFavorite(userId: string, restaurantId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('restaurant_favorites')
+        .insert({
+          user_id: userId,
+          restaurant_id: restaurantId
+        })
+        .select();
+
+      if (error) {
+        console.error('Add favorite error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, favorite: data?.[0] };
+    } catch (error) {
+      console.error('Add favorite service error:', error);
+      return { success: false, error: 'Failed to add favorite' };
+    }
+  }
+
+  async removeFavorite(userId: string, restaurantId: string) {
+    try {
+      const { error } = await supabase
+        .from('restaurant_favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('restaurant_id', restaurantId);
+
+      if (error) {
+        console.error('Remove favorite error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Remove favorite service error:', error);
+      return { success: false, error: 'Failed to remove favorite' };
+    }
+  }
 }

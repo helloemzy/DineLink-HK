@@ -19,6 +19,9 @@ import type { DiningEventWithMembers } from '../lib/events';
 import CreateEventModal from '../components/CreateEventModal';
 import EventMemberModal from '../components/EventMemberModal';
 import BillSplitModal from '../components/BillSplitModal';
+import JoinEventModal from '../components/JoinEventModal';
+import ExploreModal from '../components/ExploreModal';
+import SocialProofBanner from '../components/SocialProofBanner';
 
 
 type DiningEvent = {
@@ -60,7 +63,10 @@ export default function DineLinkHome() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [showEventMemberModal, setShowEventMemberModal] = useState(false);
   const [showBillSplitModal, setShowBillSplitModal] = useState(false);
+  const [showJoinEventModal, setShowJoinEventModal] = useState(false);
+  const [showExploreModal, setShowExploreModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<DiningEventWithMembers | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
   
   const authService = new AuthService();
   const eventService = new EventService();
@@ -217,6 +223,28 @@ export default function DineLinkHome() {
     return date.toLocaleDateString(currentLanguage === 'zh' ? 'zh-HK' : 'en-HK');
   };
 
+  // Handler for when user joins an event
+  const handleEventJoined = async (event: DiningEventWithMembers) => {
+    // Refresh user's events
+    if (user && userProfile) {
+      showToast(
+        currentLanguage === 'zh' 
+          ? `已成功加入 "${event.name}"！` 
+          : `Successfully joined "${event.name}"!`,
+        'success'
+      );
+      loadUserEvents(); // Refresh events list
+      setShowJoinEventModal(false);
+    }
+  };
+
+  // Handler for creating event from restaurant exploration
+  const handleCreateEventForRestaurant = (restaurant: any) => {
+    setSelectedRestaurant(restaurant);
+    setShowExploreModal(false);
+    setShowCreateEventModal(true);
+  };
+
   // Sample data for demonstration
   const sampleEvents: DiningEvent[] = [
     {
@@ -328,6 +356,7 @@ export default function DineLinkHome() {
     setShowEventMemberModal(false);
     setShowBillSplitModal(true);
   };
+
 
 
   // Initialize component and check auth status
@@ -593,6 +622,12 @@ export default function DineLinkHome() {
   // Authenticated Dashboard
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Social Proof Banner */}
+      <SocialProofBanner 
+        currentLanguage={currentLanguage}
+        currentUserId={user?.id}
+      />
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-md mx-auto px-4 py-3">
@@ -638,16 +673,25 @@ export default function DineLinkHome() {
               <Users className="w-6 h-6 text-red-500 mb-2" />
               <span className="text-sm font-medium text-red-700">{getText('createEvent')}</span>
             </button>
-            <button className="flex flex-col items-center p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors">
+            <button 
+              onClick={() => setShowJoinEventModal(true)}
+              className="flex flex-col items-center p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors"
+            >
               <Calendar className="w-6 h-6 text-orange-500 mb-2" />
               <span className="text-sm font-medium text-orange-700">{getText('joinEvent')}</span>
             </button>
-            <button className="flex flex-col items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">
+            <button 
+              onClick={() => setShowExploreModal(true)}
+              className="flex flex-col items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+            >
               <MapPin className="w-6 h-6 text-blue-500 mb-2" />
               <span className="text-sm font-medium text-blue-700">{getText('exploreRestaurants')}</span>
             </button>
           </div>
         </div>
+
+        {/* Social Proof Banner */}
+        <SocialProofBanner currentLanguage={currentLanguage} />
 
         {/* Upcoming Events */}
         <div className="bg-white rounded-xl shadow-sm p-4">
@@ -762,6 +806,29 @@ export default function DineLinkHome() {
           event={selectedEvent}
           currentUserId={user.id}
           currentLanguage={currentLanguage}
+        />
+      )}
+
+      {/* Join Event Modal */}
+      {user && userProfile && (
+        <JoinEventModal
+          isOpen={showJoinEventModal}
+          onClose={() => setShowJoinEventModal(false)}
+          currentUserId={user.id}
+          currentUserName={userProfile.name}
+          currentLanguage={currentLanguage}
+          onEventJoined={handleEventJoined}
+        />
+      )}
+
+      {/* Explore Modal */}
+      {user && userProfile && (
+        <ExploreModal
+          isOpen={showExploreModal}
+          onClose={() => setShowExploreModal(false)}
+          currentUserId={user.id}
+          currentLanguage={currentLanguage}
+          onCreateEventForRestaurant={handleCreateEventForRestaurant}
         />
       )}
     </div>

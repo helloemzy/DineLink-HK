@@ -503,4 +503,37 @@ export class EventService {
       memberSubscription.unsubscribe();
     };
   }
+
+  // Viral tracking functions
+  async trackViralEvent(userId: string, eventType: string, metadata: any) {
+    try {
+      await supabase
+        .from('viral_events')
+        .insert({
+          user_id: userId,
+          event_type: eventType,
+          metadata: metadata,
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Failed to track viral event:', error);
+    }
+  }
+
+  async trackViralShare(userId: string, contentType: string, contentId: string, channel: string, metadata: any) {
+    try {
+      await supabase
+        .from('viral_shares')
+        .insert({
+          user_id: userId,
+          content_type: contentType,
+          content_id: contentId,
+          channel: channel,
+          metadata: metadata,
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Failed to track viral share:', error);
+    }
+  }
 }

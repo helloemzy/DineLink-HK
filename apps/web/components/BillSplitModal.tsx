@@ -11,7 +11,12 @@ import {
   Check,
   Clock,
   CreditCard,
-  Upload
+  Upload,
+  Share2,
+  Heart,
+  Trophy,
+  MessageCircle,
+  Copy
 } from 'lucide-react';
 import { BillService } from '../lib/bills';
 import type { BillWithItems, BillSummary, CreateBillItemData } from '../lib/bills';
@@ -25,7 +30,7 @@ interface BillSplitModalProps {
   currentLanguage: 'en' | 'zh';
 }
 
-type Step = 'create' | 'items' | 'split' | 'summary';
+type Step = 'create' | 'items' | 'split' | 'summary' | 'viral_success';
 
 export default function BillSplitModal({
   isOpen,
@@ -58,6 +63,10 @@ export default function BillSplitModal({
   // Current bill data
   const [currentBill, setCurrentBill] = useState<BillWithItems | null>(null);
   const [billSummary, setBillSummary] = useState<BillSummary | null>(null);
+
+  // Viral sharing state
+  const [hasShared, setHasShared] = useState(false);
+  const [shareMethod, setShareMethod] = useState<'link' | 'whatsapp' | 'social' | null>(null);
 
   const billService = new BillService();
 
@@ -108,7 +117,21 @@ export default function BillSplitModal({
         paymentStatus: 'Payment Status',
         requestPayment: 'Request Payment',
         markAsPaid: 'Mark as Paid',
-        hkd: 'HKD'
+        hkd: 'HKD',
+        viralSuccess: 'Success! Bill Split Complete',
+        shareSuccess: 'Share Your DineLink Experience',
+        shareSuccessDesc: 'Help friends discover easier group dining',
+        shareWhatsApp: 'Share on WhatsApp',
+        shareLink: 'Copy Link',
+        shareSocial: 'Share on Social Media',
+        viralMessage: 'Just split a HK${amount} bill with {count} friends using DineLink! No more awkward money conversations 🎉',
+        shareReward: 'Get HK$10 credit when friends sign up!',
+        skipSharing: 'Maybe Later',
+        thankYou: 'Thanks for sharing!',
+        viralBonus: 'Viral Bonus Earned!',
+        continueWithoutSharing: 'Continue Without Sharing',
+        easyBillSplit: 'Easy Bill Splitting',
+        groupDiningMadeSimple: 'Group dining made simple with DineLink'
       },
       zh: {
         billSplitting: '帳單分攤',
@@ -155,7 +178,21 @@ export default function BillSplitModal({
         paymentStatus: '付款狀態',
         requestPayment: '請求付款',
         markAsPaid: '標記為已付款',
-        hkd: '港幣'
+        hkd: '港幣',
+        viralSuccess: '成功！帳單分攤完成',
+        shareSuccess: '分享您的 DineLink 體驗',
+        shareSuccessDesc: '幫助朋友發現更輕鬆的群組用餐',
+        shareWhatsApp: '在 WhatsApp 分享',
+        shareLink: '複製連結',
+        shareSocial: '在社交媒體分享',
+        viralMessage: '剛剛用 DineLink 與 {count} 位朋友分攤了 HK${amount} 的帳單！不再有尷尬的金錢對話 🎉',
+        shareReward: '朋友註冊時獲得 HK$10 積分！',
+        skipSharing: '稍後再說',
+        thankYou: '感謝分享！',
+        viralBonus: '病毒式推薦獎勵已獲得！',
+        continueWithoutSharing: '不分享並繼續',
+        easyBillSplit: '輕鬆分帳',
+        groupDiningMadeSimple: 'DineLink 讓群組用餐變得簡單'
       }
     };
     return texts[currentLanguage][key as keyof typeof texts['en']] || texts.en[key as keyof typeof texts['en']];
@@ -289,8 +326,8 @@ export default function BillSplitModal({
     try {
       const result = await billService.finalizeBill(currentBill.id, currentUserId);
       if (result.success) {
-        onClose();
-        // TODO: Show success message
+        // Move to viral success step instead of closing immediately
+        setStep('viral_success');
       } else {
         setError(result.error || 'Failed to finalize bill');
       }
@@ -298,6 +335,52 @@ export default function BillSplitModal({
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Viral sharing functions
+  const handleShare = async (method: 'link' | 'whatsapp' | 'social') => {
+    if (!event || !billSummary) return;
+
+    const shareText = getText('viralMessage')
+      .replace('{amount}', billSummary.bill.total_amount.toFixed(2))
+      .replace('{count}', (billSummary.user_totals.length - 1).toString());
+    
+    const shareUrl = `${window.location.origin}/?ref=${currentUserId}`;
+    const fullShareText = `${shareText}\n\nTry DineLink: ${shareUrl}`;
+
+    try {
+      switch (method) {
+        case 'whatsapp':
+          window.open(`https://wa.me/?text=${encodeURIComponent(fullShareText)}`, '_blank');
+          break;
+        case 'social':
+          if (navigator.share) {
+            await navigator.share({
+              title: getText('easyBillSplit'),
+              text: shareText,
+              url: shareUrl
+            });
+          } else {
+            // Fallback to copy link
+            await navigator.clipboard.writeText(fullShareText);
+          }
+          break;
+        case 'link':
+          await navigator.clipboard.writeText(fullShareText);
+          break;
+      }
+
+      setHasShared(true);
+      setShareMethod(method);
+      
+      // Close modal after a brief delay to show success
+      setTimeout(() => {
+        onClose();
+      }, 2500);
+
+    } catch (error) {
+      console.error('Share error:', error);
     }
   };
 
@@ -332,15 +415,15 @@ export default function BillSplitModal({
         {/* Progress Steps */}
         <div className="flex items-center justify-center px-6 py-4 border-b border-gray-100">
           <div className="flex items-center space-x-2">
-            {(['create', 'items', 'split', 'summary'] as Step[]).map((stepName, index) => (
+            {(['create', 'items', 'split', 'summary', 'viral_success'] as Step[]).map((stepName, index) => (
               <div key={stepName} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   step === stepName ? 'bg-red-100 text-red-500' :
-                  ['create', 'items', 'split', 'summary'].indexOf(step) > index ? 'bg-green-100 text-green-500' : 'bg-gray-100 text-gray-400'
+                  ['create', 'items', 'split', 'summary', 'viral_success'].indexOf(step) > index ? 'bg-green-100 text-green-500' : 'bg-gray-100 text-gray-400'
                 }`}>
                   {index + 1}
                 </div>
-                {index < 3 && <div className="w-6 h-px bg-gray-300 mx-1" />}
+                {index < 4 && <div className="w-6 h-px bg-gray-300 mx-1" />}
               </div>
             ))}
           </div>
@@ -647,6 +730,94 @@ export default function BillSplitModal({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Step 5: Viral Success */}
+          {step === 'viral_success' && (
+            <div className="text-center space-y-6">
+              {!hasShared ? (
+                <>
+                  {/* Success celebration */}
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                      <Trophy className="w-8 h-8 text-green-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">{getText('viralSuccess')}</h3>
+                      <p className="text-gray-600">{getText('groupDiningMadeSimple')}</p>
+                    </div>
+                  </div>
+
+                  {/* Viral sharing invitation */}
+                  <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6 space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">{getText('shareSuccess')}</h4>
+                      <p className="text-sm text-gray-600 mb-4">{getText('shareSuccessDesc')}</p>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div className="flex items-center">
+                          <Heart className="w-4 h-4 text-yellow-500 mr-2" />
+                          <p className="text-sm text-yellow-700 font-medium">{getText('shareReward')}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Share buttons */}
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => handleShare('whatsapp')}
+                        className="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                      >
+                        <MessageCircle className="w-5 h-5 mr-2" />
+                        {getText('shareWhatsApp')}
+                      </button>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => handleShare('link')}
+                          className="flex items-center justify-center px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          {getText('shareLink')}
+                        </button>
+                        <button
+                          onClick={() => handleShare('social')}
+                          className="flex items-center justify-center px-4 py-3 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                        >
+                          <Share2 className="w-4 h-4 mr-2" />
+                          {getText('shareSocial')}
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={onClose}
+                        className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
+                      >
+                        {getText('continueWithoutSharing')}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // Thank you for sharing
+                <div className="space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <Check className="w-8 h-8 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-green-600 mb-2">{getText('thankYou')}</h3>
+                    <p className="text-gray-600">{getText('viralBonus')}</p>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-green-500 mr-2" />
+                      <span className="text-sm font-medium text-green-700">
+                        HK$10 referral credit pending
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
